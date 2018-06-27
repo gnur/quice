@@ -2,10 +2,22 @@
 
 
 [[projects]]
+  name = "github.com/burntsushi/toml"
+  packages = ["."]
+  revision = "b26d9c308763d68093482582cea63d69be07a0f0"
+  version = "v0.3.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/dustin/go-humanize"
   packages = ["."]
   revision = "02af3965c54e8cacf948b97fef38925c4120652c"
+
+[[projects]]
+  name = "github.com/elazarl/go-bindata-assetfs"
+  packages = ["."]
+  revision = "30f82fa23fd844bd5bb1e5f216db87fd77b5eb43"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/go-ini/ini"
@@ -91,6 +103,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f8dc45ca1d380c19a2c8bd9e8492a6374bf907b05a7c49dbdfb6b154b9db862c"
+  inputs-digest = "7d6580c0dd12e7d63b15ad876f0aa12e1bc34d16fb6f479eab3c3e038cb12f26"
   solver-name = "gps-cdcl"
   solver-version = 1
