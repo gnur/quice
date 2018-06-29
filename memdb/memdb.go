@@ -28,11 +28,12 @@ var (
 
 // Memdb is the in-memory struct that can be saved to S3
 type Memdb struct {
-	lock   sync.Mutex
-	store  *minio.Client
-	bucket string
-	conf   *config.Cfg
-	Users  map[string]*User
+	lock    sync.Mutex
+	store   *minio.Client
+	bucket  string
+	conf    *config.Cfg
+	Users   map[string]*User
+	changes bool
 }
 
 // User holds playlists for a user
@@ -67,6 +68,18 @@ func Init(mc *minio.Client, bucket string, config *config.Cfg, saveInterval time
 		log.WithField("error", err).Fatal("could not load quice-db from S3")
 	}
 	m.refresh()
+	go func() {
+		for {
+			time.Sleep(refreshInterval)
+			m.refresh()
+		}
+	}()
+	go func() {
+		for {
+			time.Sleep(saveInterval)
+			m.Save()
+		}
+	}()
 	return &m
 }
 
@@ -74,11 +87,17 @@ func Init(mc *minio.Client, bucket string, config *config.Cfg, saveInterval time
 func (m *Memdb) Save() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	if !m.changes {
+		log.Debug("no changes were detected, not writing to S3")
+		return nil
+	}
+	log.Info("changes were detected, writing to S3")
 	buf := &bytes.Buffer{}
 	if err := gob.NewEncoder(buf).Encode(m); err != nil {
 		return err
 	}
 	_, err := m.store.PutObject(m.bucket, ".quice-db.dat", buf, -1, minio.PutObjectOptions{})
+	m.changes = false
 	return err
 }
 
@@ -160,6 +179,7 @@ func (m *Memdb) UpdateProgress(u string, p string, key string, pos int64) {
 		l.Warning("video not not found")
 		return
 	}
+	m.changes = true
 	video.Position = pos
 }
 
@@ -226,6 +246,7 @@ func (m *Memdb) SetCompleted(u, p, key string) {
 		return
 	}
 	video.Completed = true
+	m.changes = true
 	return
 }
 
@@ -401,6 +422,17 @@ func (m *Memdb) SetCurrentVideo() http.HandlerFunc {
 		b, _ := ioutil.ReadAll(r.Body)
 		json.Unmarshal(b, &c)
 		m.UpdateProgress(c.User, c.Playlist, c.Key, c.Position)
+		fmt.Fprintf(w, "%q", "ok")
+		return
+	}
+}
+
+func (m *Memdb) CompleteVideo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var c currentVideo
+		b, _ := ioutil.ReadAll(r.Body)
+		json.Unmarshal(b, &c)
+		m.SetCompleted(c.User, c.Playlist, c.Key)
 		fmt.Fprintf(w, "%q", "ok")
 		return
 	}
