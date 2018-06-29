@@ -38,21 +38,6 @@ func main() {
 	log.Info("loaded playlists")
 
 	db := memdb.Init(minioClient, bucket, config, time.Minute, time.Minute*5)
-	if os.Getenv("tests") == "tests" {
-		_, key, pos := db.GetPlaylistPosition("erwin", "comedy")
-		log.WithFields(log.Fields{
-			"key": key,
-			"pos": pos,
-		}).Info("is next up for playing")
-		_, key, pos = db.GetPlaylistPosition("erwin", "comedy")
-		db.UpdateProgress("erwin is ok", "comedy", key, 15)
-		_, key, pos = db.GetPlaylistPosition("erwin", "comedy")
-		log.WithFields(log.Fields{
-			"key": key,
-			"pos": pos,
-		}).Info("is next up for playing")
-		return
-	}
 
 	r := mux.NewRouter()
 
@@ -60,6 +45,7 @@ func main() {
 	r.HandleFunc("/api/playlists/{user}/", db.GetPlaylists())
 	r.HandleFunc("/api/current/{user}/{playlist}/", db.GetCurrentVideo()).Methods("GET")
 	r.HandleFunc("/api/updatecurrent/", db.SetCurrentVideo()).Methods("POST")
+	r.HandleFunc("/api/setcompleted/", db.CompleteVideo()).Methods("POST")
 
 	r.PathPrefix("/").Handler(http.FileServer(assetFS()))
 

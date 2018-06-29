@@ -48,6 +48,17 @@ export default {
       },
       gotoNextVideo: function () {
         //set current as complete
+        var vm = this;
+        axios.post("/api/setcompleted/", {
+            user: vm.user,
+            key: vm.video.key,
+            playlist: vm.playlist,
+          }).then((response) => {
+          console.log("ok")
+        this.playVideo()
+       }, (error) => {
+         console.log(error)
+       })
         console.log("completed")
       },
       stopRecord: function () {
