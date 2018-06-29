@@ -1,0 +1,16 @@
+
+[users.erwin.playlists.comedy]
+prefixes = [ "daily show", "stephen colbert", "last week tonight" ]
+sorttype = "date"
+
+[users.erwin.playlists."rick and morty"]
+prefixes = [ "rick and morty" ]
+sorttype = "episode"
+
+[users.erwin.playlists.marvel]
+prefixes = [ "marvel" ]
+sorttype = "filename"
+
+[users.jurwin.playlists.elementary]
+prefixes = [ "elementary" ]
+sorttype = "episode"
