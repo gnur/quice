@@ -1,4 +1,4 @@
 .idea
-bindata
+bindata.go
 quice
 app/dist/
