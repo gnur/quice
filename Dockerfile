@@ -1,7 +1,7 @@
 FROM node as jsbuilder
 WORKDIR /app
 COPY app /app
-RUN npm run build
+RUN cd /app && npm run build
 
 
 FROM golang:1.9.4-alpine3.7 as builder
