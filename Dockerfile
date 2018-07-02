@@ -1,8 +1,8 @@
 FROM node as jsbuilder
 WORKDIR /workspace
 COPY app /workspace
-RUN npm install
-RUN npm run build
+RUN cd /workspace && npm install
+RUN cd /workspace && npm run build
 
 
 FROM golang:1.9.4-alpine3.7 as builder
