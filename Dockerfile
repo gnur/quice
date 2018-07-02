@@ -9,16 +9,17 @@ WORKDIR /go/src/github.com/gnur/quice/
 RUN apk add --no-cache git
 RUN go get github.com/jteeuwen/go-bindata/...
 RUN go get github.com/elazarl/go-bindata-assetfs/...
-COPY --from=jsbuilder /app/dist /app/dist
+COPY --from=jsbuilder /app/dist app/dist
 
-RUN go-bindata-assetfs -prefix /app /app/dist
+RUN go-bindata-assetfs -prefix app app/dist/...
 COPY vendor vendor
 COPY config config
 COPY memdb memdb
 COPY main.go .
-RUN go build -o app *.go
+RUN go build -o quice *.go
 
 FROM alpine:latest  
-CMD ["./app"]
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+CMD ["./quice"]
 EXPOSE 8624
-COPY --from=builder /go/src/github.com/gnur/quice/app /
+COPY --from=builder /go/src/github.com/gnur/quice/quice /
