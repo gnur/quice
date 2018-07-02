@@ -1,5 +1,5 @@
 [docker]
-buildfile = "/dist/Dockerfile"
+buildfile = "Dockerfile"
 repository = "r.erwin.land/gnur/quice"
 
 [deployment]
