@@ -1,0 +1,8 @@
+[docker]
+buildfile = "/dist/Dockerfile"
+repository = "r.erwin.land/gnur/quice"
+
+[deployment]
+enabled = true
+onlymaster = true
+namespace = "default"
