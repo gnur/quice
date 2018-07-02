@@ -1,15 +1,8 @@
-FROM busybox as busybox
-run echo "sleeping for 10 seconds"
-RUN sleep 10
-RUN ls -l /src/
-RUN find /src/ -maxdepth 2
-RUN du -sh /src/
-RUN du -sh /src/*
-
 FROM node as jsbuilder
 WORKDIR /workspace
 COPY app /workspace
-RUN cd /workspace && npm run build
+RUN npm install
+RUN npm run build
 
 
 FROM golang:1.9.4-alpine3.7 as builder
