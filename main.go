@@ -14,7 +14,11 @@ import (
 
 func init() {
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
+	if os.Getenv("LOGLEVEL") == "DEBUG" {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
 }
 
 func main() {
@@ -37,7 +41,7 @@ func main() {
 	}
 	log.Info("loaded playlists")
 
-	db := memdb.Init(minioClient, bucket, config, time.Minute, time.Minute*5)
+	db := memdb.Init(minioClient, bucket, config, time.Minute, time.Minute*10)
 
 	r := mux.NewRouter()
 
@@ -51,6 +55,6 @@ func main() {
 
 	http.Handle("/", r)
 
-	log.Fatal(http.ListenAndServe("localhost:8624", nil))
+	log.Fatal(http.ListenAndServe(":8624", nil))
 
 }

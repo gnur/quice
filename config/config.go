@@ -31,11 +31,18 @@ func Load(mc *minio.Client, bucket string) (*Cfg, error) {
 		return nil, err
 	}
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(object)
+	n, err := buf.ReadFrom(object)
+	if err != nil {
+		return nil, err
+	}
+	log.WithField("size", n).Debug("reading quice.toml")
 	f := buf.Bytes()
 
 	var v Cfg
 	_, err = toml.Decode(string(f), &v)
+	if err != nil {
+		return nil, err
+	}
 
 	return &v, nil
 

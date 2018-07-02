@@ -116,6 +116,7 @@ func (m *Memdb) Load() error {
 	err = dec.Decode(&m)
 
 	if m.Users == nil {
+		log.Debug("Creating empty user list")
 		v := make(map[string]*User)
 		m.Users = v
 	}
