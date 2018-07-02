@@ -26,7 +26,6 @@ export default {
   },
   methods: {
     startRecord: function() {
-      console.log("starting recorder");
       var vm = this;
       vm.timer = setInterval(this.updatePlayStatus, 5000);
     },
@@ -43,9 +42,7 @@ export default {
           position: pos
         })
         .then(
-          response => {
-            console.log("ok");
-          },
+          response => {},
           error => {
             console.log(error);
           }
@@ -61,22 +58,22 @@ export default {
         })
         .then(
           response => {
-            console.log("ok");
+            var player = document.getElementById("videoplayer");
+            if (document.fullscreenEnabled) {
+              document.exitFullscreen();
+            }
             this.playVideo();
           },
           error => {
             console.log(error);
           }
         );
-      console.log("completed");
     },
     stopRecord: function() {
       var vm = this;
-      console.log("stopping recorder");
       clearInterval(vm.timer);
     },
     playVideo: function() {
-      console.log("starting next video");
       axios.get("/api/current/" + this.user + "/" + this.playlist + "/").then(
         response => {
           var resp = response.data;
