@@ -1,7 +1,15 @@
+FROM busybox as busybox
+run echo "sleeping for 10 seconds"
+RUN sleep 10
+RUN ls -l /src/
+RUN find /src/ -maxdepth 2
+RUN du -sh /src/
+RUN du -sh /src/*
+
 FROM node as jsbuilder
-WORKDIR /app
-COPY app /app
-RUN cd /app && npm run build
+WORKDIR /workspace
+COPY app /workspace
+RUN cd /workspace && npm run build
 
 
 FROM golang:1.9.4-alpine3.7 as builder
@@ -9,7 +17,7 @@ WORKDIR /go/src/github.com/gnur/quice/
 RUN apk add --no-cache git
 RUN go get github.com/jteeuwen/go-bindata/...
 RUN go get github.com/elazarl/go-bindata-assetfs/...
-COPY --from=jsbuilder /app/dist app/dist
+COPY --from=jsbuilder /workspace/dist app/dist
 
 RUN go-bindata-assetfs -prefix app app/dist/...
 COPY vendor vendor
