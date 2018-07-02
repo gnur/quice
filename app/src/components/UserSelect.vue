@@ -11,34 +11,38 @@
 </template>
 
 <script>
-import axios from 'axios'
+import axios from "axios";
 
 export default {
-  name: 'UserSelect',
-    data: function () {
-      return {
-        users: []
-      }
-    },
-    methods: {
-      getUsers: function () {
-        axios.get('/api/users').then((response) => {
+  name: "UserSelect",
+  data: function() {
+    return {
+      users: []
+    };
+  },
+  methods: {
+    getUsers: function() {
+      axios.get("/api/users").then(
+        response => {
           this.users = response.data.users;
           console.log(this.users[0]);
-        }, (error) => {
-          console.log(error)
-        })
-      }
-    },
-    mounted: function () {
-      this.getUsers()
+        },
+        error => {
+          console.log(error);
+        }
+      );
     }
-}
+  },
+  mounted: function() {
+    this.getUsers();
+  }
+};
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h1, h2 {
+h1,
+h2 {
   font-weight: normal;
 }
 ul {

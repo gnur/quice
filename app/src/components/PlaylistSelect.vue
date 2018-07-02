@@ -11,34 +11,38 @@
 </template>
 
 <script>
-import axios from 'axios'
+import axios from "axios";
 
 export default {
-  name: 'PlaylistSelect',
-  props: ['user'],
-    data: function () {
-      return {
-        playlists: []
-      }
-    },
-    methods: {
-      getUsers: function () {
-        axios.get('/api/playlists/' + this.user + '/').then((response) => {
+  name: "PlaylistSelect",
+  props: ["user"],
+  data: function() {
+    return {
+      playlists: []
+    };
+  },
+  methods: {
+    getUsers: function() {
+      axios.get("/api/playlists/" + this.user + "/").then(
+        response => {
           this.playlists = response.data.playlists;
-        }, (error) => {
-          console.log(error)
-        })
-      }
-    },
-    mounted: function () {
-      this.getUsers()
+        },
+        error => {
+          console.log(error);
+        }
+      );
     }
-}
+  },
+  mounted: function() {
+    this.getUsers();
+  }
+};
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h1, h2 {
+h1,
+h2 {
   font-weight: normal;
 }
 ul {
