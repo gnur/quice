@@ -134,11 +134,12 @@ func (m *Memdb) Load() error {
 			m.Users[username] = &u
 		}
 		for playlistName, play := range user.Playlists {
-			if _, ok := m.Users[username].Playlists[playlistName]; ok {
+			if p, ok := m.Users[username].Playlists[playlistName]; ok {
 				log.WithFields(log.Fields{
 					"username": username,
 					"playlist": playlistName,
 				}).Debug("playlist with this name already present for user")
+				p.Prefixes = play.Prefixes
 				continue
 			}
 
@@ -251,9 +252,18 @@ func (m *Memdb) SetCompleted(u, p, key string) {
 	return
 }
 
+func (m *Memdb) KeyExists(k string) bool {
+	_, err := m.store.StatObject(m.bucket, k, minio.StatObjectOptions{})
+	if err != nil {
+		log.WithField("err", err).Warning("statobject failed")
+	}
+	return err == nil
+}
+
 func (m *Memdb) refresh() {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	log.Info("Refreshing bucket contents")
 
 	for username, user := range m.Users {
 		for playlistname, play := range user.Playlists {
@@ -261,6 +271,13 @@ func (m *Memdb) refresh() {
 				"user":     username,
 				"playlist": playlistname,
 			})
+			for k, v := range play.Videos {
+				if !m.KeyExists(v.Key) {
+					l.WithField("key", v.Key).Info("file was removed")
+					delete(play.Videos, k)
+					m.changes = true
+				}
+			}
 			for _, prefix := range play.Prefixes {
 				l.WithField("prefix", prefix).Debug("adding files from prefix")
 				files := m.listFiles(prefix)
@@ -291,9 +308,13 @@ func (m *Memdb) refresh() {
 
 					if _, ok := play.Videos[videoID]; !ok {
 						play.Videos[videoID] = &v
+						m.changes = true
 					}
-					play.sortedKeys = append(play.sortedKeys, videoID)
 				}
+			}
+			play.sortedKeys = []string{}
+			for videoID := range play.Videos {
+				play.sortedKeys = append(play.sortedKeys, videoID)
 			}
 			sort.Sort(sort.StringSlice(play.sortedKeys))
 		}

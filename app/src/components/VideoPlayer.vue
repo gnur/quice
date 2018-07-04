@@ -16,8 +16,12 @@
   <div class="tile is-parent">
     <div class="tile is-3 is-child box">
       <progress class="progress is-info" :value="currentVideo" :max="totalVideos">{{ currentVideo }}/{{ totalVideos }}</progress><br>
-      <p class="title">{{ currentVideo }}/{{ totalVideos }}</p>
-      {{ video.key | keyToNice }}
+      <p class="title">{{ currentVideo+1 }}/{{ totalVideos }}</p>
+      <p>
+        <p class="title is-5">Now playing:</p>
+        <p class="subtitle is-6">{{ video.key | keyToNice }}</p>
+      <p><h6 class="title is-5">Next up:</h6>
+        <a v-on:click="gotoNextVideo">{{ all[currentVideo + 1] | keyToNice }}</a>
     </div>
     <div class="tile is-child box">
         <video id="videoplayer"
