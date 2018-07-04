@@ -14,7 +14,7 @@
 </nav>
 <div class="tile is-ancestor">
   <div class="tile is-parent">
-    <div class="tile is-3 is-child box">
+    <div class="tile is-3 is-child box" v-if="loaded">
       <progress class="progress is-info" :value="currentVideo" :max="totalVideos">{{ currentVideo }}/{{ totalVideos }}</progress><br>
       <p class="title">{{ currentVideo+1 }}/{{ totalVideos }}</p>
       <p>
@@ -23,6 +23,10 @@
       <p><h6 class="title is-5">Next up:</h6>
         <a v-on:click="gotoNextVideo">{{ all[currentVideo + 1] | keyToNice }}</a>
     </div>
+    <div class="tile is-3 is-child box" v-else>
+      <p class="title is-2">Loading...</p>
+    </div>
+
     <div class="tile is-child box">
         <video id="videoplayer"
             controls="true"
@@ -47,6 +51,7 @@ export default {
   data: function() {
     return {
       video: {},
+      loaded: false,
       currentVideo: 2,
       totalVideos: 4,
       all: [],
@@ -113,12 +118,14 @@ export default {
           this.currentVideo = resp.all.indexOf(resp.key);
           this.totalVideos = resp.all.length;
           this.all = resp.all;
+          var vm = this;
           var player = document.getElementById("videoplayer");
           var source = document.getElementById("videosource");
 
           source.setAttribute("src", resp.url);
           player.load();
           var handler = function() {
+            vm.loaded = true;
             player.currentTime = resp.pos;
             if (autostart) {
               player.play();
