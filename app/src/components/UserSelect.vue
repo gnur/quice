@@ -1,5 +1,5 @@
 <template>
-  <div class="tile is-ancestor is-10">
+  <div class="tile is-ancestor is-10 has-text-centered">
 
     <div v-for="user in users" :key="user" class="tile is-parent">
       <router-link :to="{ name: 'PlaylistSelect', params: { user: user }}" class="tile is-child box">

@@ -55,6 +55,6 @@ func main() {
 
 	http.Handle("/", r)
 
-	log.Fatal(http.ListenAndServe(":8624", nil))
+	log.Fatal(http.ListenAndServe("localhost:8624", nil))
 
 }

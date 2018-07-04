@@ -393,9 +393,10 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 }
 
 type currentResp struct {
-	Url string `json:"url"`
-	Key string `json:"key"`
-	Pos int64  `json:"pos"`
+	Url       string   `json:"url"`
+	Key       string   `json:"key"`
+	Pos       int64    `json:"pos"`
+	AllVideos []string `json:"all"`
 }
 
 func (m *Memdb) GetCurrentVideo() http.HandlerFunc {
@@ -403,6 +404,9 @@ func (m *Memdb) GetCurrentVideo() http.HandlerFunc {
 		var u currentResp
 		vars := mux.Vars(r)
 		url, key, pos := m.GetPlaylistPosition(vars["user"], vars["playlist"])
+		if url != "" {
+			u.AllVideos = m.Users[vars["user"]].Playlists[vars["playlist"]].sortedKeys
+		}
 		u.Url = url
 		u.Key = key
 		u.Pos = pos

@@ -11,7 +11,7 @@ import VueRouter from 'vue-router'
 
 Vue.use(VueRouter)
 const routes = [
-  { path: '/', component: UserSelect },
+  { path: '/', name: "UserSelect", component: UserSelect },
   { path: '/user/:user', name: "PlaylistSelect", component: PlaylistSelect, props: true },
   { path: '/user/:user/:playlist', name: "VideoPlayer", component: VideoPlayer, props: true }
 ]
