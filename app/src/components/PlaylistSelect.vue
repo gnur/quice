@@ -1,9 +1,9 @@
 <template>
   <div class="tile is-ancestor is-10 has-text-centered">
 
-    <div v-for="playlist in playlists" :key="playlist" class="tile is-parent">
-      <router-link :to="{ name: 'VideoPlayer', params: { user: user, playlist: playlist }}" class="tile is-child box">
-          <p class="title">{{ playlist }}</p>
+    <div v-for="playlist in playlists" :key="playlist.name" class="tile is-parent">
+      <router-link :to="{ name: 'VideoPlayer', params: { user: user, playlist: playlist.name }}" class="tile is-child box">
+          <p class="title">{{ playlist.name }} <span :if="playlist.new">({{ playlist.new }})</span></p>
         </router-link>
       </div>
 

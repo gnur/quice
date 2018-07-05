@@ -391,7 +391,13 @@ func (m *Memdb) GetUsers() http.HandlerFunc {
 }
 
 type playlistResp struct {
-	Playlists []string `json:"playlists"`
+	Playlists []playResp `json:"playlists"`
+}
+
+type playResp struct {
+	Name  string `json:"name"`
+	Total int    `json:"count"`
+	New   int64  `json:"new"`
 }
 
 func (m *Memdb) GetPlaylists() http.HandlerFunc {
@@ -399,15 +405,23 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 		m.lock.Lock()
 		defer m.lock.Unlock()
 		var u playlistResp
+		var p playResp
 		vars := mux.Vars(r)
 		if _, ok := m.Users[vars["user"]]; !ok {
 			//TODO: add error
 			return
 		}
-		for pl := range m.Users[vars["user"]].Playlists {
-			u.Playlists = append(u.Playlists, pl)
+		for pl, list := range m.Users[vars["user"]].Playlists {
+			p.Name = pl
+			p.Total = len(list.Videos)
+			p.New = 0
+			for _, v := range list.Videos {
+				if !v.Completed {
+					p.New += 1
+				}
+			}
+			u.Playlists = append(u.Playlists, p)
 		}
-		sort.Sort(sort.StringSlice(u.Playlists))
 		json.NewEncoder(w).Encode(u)
 		return
 	}
