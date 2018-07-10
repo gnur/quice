@@ -94,6 +94,7 @@ export default {
     },
     gotoNextVideo: function() {
       var vm = this;
+      vm.loaded = false;
       axios
         .post("/api/setcompleted/", {
           user: vm.user,
@@ -102,7 +103,6 @@ export default {
         })
         .then(
           response => {
-            var player = document.getElementById("videoplayer");
             this.playVideo(true);
           },
           error => {
