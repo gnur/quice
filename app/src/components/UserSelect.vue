@@ -2,7 +2,7 @@
   <div class="tile is-ancestor is-10 has-text-centered">
 
     <div v-for="user in users" :key="user" class="tile is-parent">
-      <router-link :to="{ name: 'PlaylistSelect', params: { user: user }}" class="tile is-child box">
+      <router-link :to="{ name: 'PlaylistSelect', params: { user: user }}" class="tile is-child box has-background-grey-lighter has-text-grey-dark">
           <p class="title">{{ user }}</p>
         </router-link>
       </div>

@@ -13,9 +13,9 @@
   </p>
 </nav>
 <div class="tile is-ancestor">
-  <div class="tile is-parent">
-    <div class="tile is-3 is-child box" v-if="loaded">
-      <progress class="progress is-info" :value="currentVideo" :max="totalVideos">{{ currentVideo }}/{{ totalVideos }}</progress><br>
+  <div class="tile is-parent is-4">
+    <div class="tile is-child box has-background-grey-lighter has-text-grey-dark" v-if="loaded">
+      <progress class="progress" :value="currentVideo" :max="totalVideos">{{ currentVideo }}/{{ totalVideos }}</progress><br>
       <p class="title">{{ currentVideo+1 }}/{{ totalVideos }}</p>
       <p>
         <p class="title is-5">Now playing:</p>
@@ -23,18 +23,20 @@
       <p><h6 class="title is-5">Next up:</h6>
         <a v-on:click="gotoNextVideo">{{ all[currentVideo + 1] | keyToNice }}</a>
     </div>
-    <div class="tile is-3 is-child box" v-else>
+    <div class="tile is-child box has-background-grey-lighter has-text-grey-dark" v-else>
       <p class="title is-2">Loading...</p>
     </div>
+  </div>
 
-    <div class="tile is-child box">
+  <div class="tile is-parent">
+    <div class="tile is-child box has-background-grey-lighter has-text-grey-dark">
         <video id="videoplayer"
             controls="true"
             type="video/mp4"
             v-on:ended="gotoNextVideo"
             v-on:play="startRecord"
             v-on:pause="stopRecord"
-            class="is-8">
+            class="is-7">
         </video>
     </div>
   </div>
@@ -60,7 +62,7 @@ export default {
   filters: {
     keyToNice(value) {
       if (!value) return '';
-      return value.split("/")[0].replace("_", " ");
+      return value.split("/")[0].replace(/_/g, " ");
     }
   },
   methods: {
@@ -127,6 +129,7 @@ export default {
           var handler = function() {
             vm.loaded = true;
             player.currentTime = resp.pos;
+            document.title = vm.video.key;
             if (autostart) {
               player.play();
             }

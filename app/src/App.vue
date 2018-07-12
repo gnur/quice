@@ -11,8 +11,14 @@
 <script>
 export default {
   name: 'app',
+  mounted: function() {
+    document.title = "quice - select user";
+  }
 }
 </script>
 <!-- styling for the component -->
 <style>
+html {
+  background-color: #222222;
+}
 </style>
