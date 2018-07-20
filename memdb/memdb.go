@@ -119,6 +119,16 @@ func (m *Memdb) Load() error {
 		log.Debug("Creating empty user list")
 		v := make(map[string]*User)
 		m.Users = v
+	} else {
+		//delete users that are in memdb but no longer in config file
+		for u := range m.Users {
+			if _, ok := m.conf.Users[u]; !ok {
+				log.WithFields(log.Fields{
+					"username": u,
+				}).Debug("user no longer present in config file, deleting")
+				delete(m.Users, u)
+			}
+		}
 	}
 
 	for username, user := range m.conf.Users {
@@ -132,6 +142,16 @@ func (m *Memdb) Load() error {
 			var u User
 			u.Playlists = make(map[string]*Playlist)
 			m.Users[username] = &u
+		}
+		//delete playlists that are in memdb but no longer in config file
+		for p := range m.Users[username].Playlists {
+			if _, ok := m.conf.Users[username].Playlists[p]; !ok {
+				log.WithFields(log.Fields{
+					"username": username,
+					"playlist": p,
+				}).Debug("playlist no longer present in config file, deleting")
+				delete(m.Users[username].Playlists, p)
+			}
 		}
 		for playlistName, play := range user.Playlists {
 			if p, ok := m.Users[username].Playlists[playlistName]; ok {
@@ -422,6 +442,9 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 			}
 			u.Playlists = append(u.Playlists, p)
 		}
+		sort.Slice(u.Playlists, func(i, j int) bool {
+			return u.Playlists[i].Name < u.Playlists[j].Name
+		})
 		json.NewEncoder(w).Encode(u)
 		return
 	}
