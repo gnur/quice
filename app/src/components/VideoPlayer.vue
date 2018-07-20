@@ -62,7 +62,7 @@ export default {
   filters: {
     keyToNice(value) {
       if (!value) return '';
-      return value.split("/")[0].replace(/_/g, " ");
+      return value.replace(/(_|\/)/g, " ");
     }
   },
   methods: {
