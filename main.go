@@ -55,6 +55,9 @@ func main() {
 
 	http.Handle("/", r)
 
-	log.Fatal(http.ListenAndServe(":8624", nil))
-
+	if os.Getenv("BIND_ADDR") == "" {
+		log.Fatal(http.ListenAndServe(":8624", nil))
+	} else {
+		log.Fatal(http.ListenAndServe(os.Getenv("BIND_ADDR"), nil))
+	}
 }
