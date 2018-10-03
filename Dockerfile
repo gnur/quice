@@ -5,7 +5,7 @@ RUN npm install
 RUN npm run build
 
 
-FROM golang:1.9.4-alpine3.7 as builder
+FROM golang:1.11-alpine as builder
 WORKDIR /go/src/github.com/gnur/quice/
 RUN apk add --no-cache git
 RUN go get github.com/jteeuwen/go-bindata/...
