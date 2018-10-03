@@ -1,0 +1,10 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/quice:latest',
+      '-t', 'gcr.io/$PROJECT_ID/quice:${BRANCH_NAME}-${SHORT_SHA}',
+      '.' ]
+images:
+- 'gcr.io/$PROJECT_ID/quice:latest'
+- 'gcr.io/$PROJECT_ID/quice:${BRANCH_NAME}-${SHORT_SHA}'
