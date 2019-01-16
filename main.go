@@ -7,10 +7,13 @@ import (
 
 	"github.com/gnur/quice/config"
 	"github.com/gnur/quice/memdb"
+	"github.com/gnur/quice/static"
 	"github.com/gorilla/mux"
-	"github.com/minio/minio-go"
+	minio "github.com/minio/minio-go"
 	log "github.com/sirupsen/logrus"
 )
+
+//go:generate fileb0x fileb0x.toml
 
 func init() {
 	log.SetOutput(os.Stdout)
@@ -51,7 +54,7 @@ func main() {
 	r.HandleFunc("/api/updatecurrent/", db.SetCurrentVideo()).Methods("POST")
 	r.HandleFunc("/api/setcompleted/", db.CompleteVideo()).Methods("POST")
 
-	r.PathPrefix("/").Handler(http.FileServer(assetFS()))
+	r.PathPrefix("/").Handler(static.Handler)
 
 	http.Handle("/", r)
 

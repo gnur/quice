@@ -17,7 +17,7 @@ import (
 
 	"github.com/gnur/quice/config"
 	"github.com/gorilla/mux"
-	"github.com/minio/minio-go"
+	minio "github.com/minio/minio-go"
 	log "github.com/sirupsen/logrus"
 )
 

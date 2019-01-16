@@ -6,18 +6,20 @@ RUN npm run build
 
 
 FROM golang:1.11-alpine as builder
+RUN apk update && apk add alpine-sdk git
+ENV GO111MODULE=on
 WORKDIR /go/src/github.com/gnur/quice/
-RUN apk add --no-cache git
-RUN go get github.com/jteeuwen/go-bindata/...
-RUN go get github.com/elazarl/go-bindata-assetfs/...
+COPY go.mod go.mod
+COPY go.sum go.sum
 COPY --from=jsbuilder /workspace/dist app/dist
+RUN go get -u github.com/UnnoTed/fileb0x
 
-RUN go-bindata-assetfs -prefix app app/dist/...
-COPY vendor vendor
+COPY fileb0x.toml fileb0x.toml
 COPY config config
 COPY memdb memdb
 COPY main.go .
-RUN go build -o quice *.go
+RUN go generate
+RUN go build
 
 FROM alpine:latest  
 RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
