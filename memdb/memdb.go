@@ -55,6 +55,7 @@ type Video struct {
 	Filename  string
 	Key       string
 	Completed bool
+	Changed   time.Time
 }
 
 // Init loads the data from S3 and syncs everything periodically
@@ -272,6 +273,7 @@ func (m *Memdb) SetCompleted(u, p, key string) {
 	return
 }
 
+// KeyExists returns true or false depending on the existence of an object in an S3 bucket
 func (m *Memdb) KeyExists(k string) bool {
 	_, err := m.store.StatObject(m.bucket, k, minio.StatObjectOptions{})
 	if err != nil {
@@ -312,6 +314,7 @@ func (m *Memdb) refresh() {
 					v.Completed = false
 					v.Position = 0
 					v.Filename = keyParts[len(keyParts)-1]
+					v.Changed = o.LastModified
 					v.Key = o.Key
 					if play.Sorttype == "date" {
 						videoID = o.LastModified.UTC().Format(time.RFC3339) + "_" + o.Key
@@ -396,6 +399,7 @@ type userResp struct {
 	Users []string `json:"users"`
 }
 
+// GetUsers returns all users as JSON
 func (m *Memdb) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m.lock.Lock()
@@ -420,6 +424,7 @@ type playResp struct {
 	New   int64  `json:"new"`
 }
 
+// GetPlaylists returns all playlists for an user as JSON
 func (m *Memdb) GetPlaylists() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m.lock.Lock()
@@ -437,7 +442,7 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 			p.New = 0
 			for _, v := range list.Videos {
 				if !v.Completed {
-					p.New += 1
+					p.New++
 				}
 			}
 			u.Playlists = append(u.Playlists, p)
@@ -451,12 +456,13 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 }
 
 type currentResp struct {
-	Url       string   `json:"url"`
+	URL       string   `json:"url"`
 	Key       string   `json:"key"`
 	Pos       int64    `json:"pos"`
 	AllVideos []string `json:"all"`
 }
 
+// GetCurrentVideo returns the first unwatched video from a playlist
 func (m *Memdb) GetCurrentVideo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u currentResp
@@ -465,7 +471,7 @@ func (m *Memdb) GetCurrentVideo() http.HandlerFunc {
 		if url != "" {
 			u.AllVideos = m.Users[vars["user"]].Playlists[vars["playlist"]].sortedKeys
 		}
-		u.Url = url
+		u.URL = url
 		u.Key = key
 		u.Pos = pos
 		json.NewEncoder(w).Encode(u)
@@ -479,6 +485,7 @@ type currentVideo struct {
 	Position int64  `json:"position"`
 }
 
+// SetCurrentVideo handles the HTTP request to update the memDB with current position of a video
 func (m *Memdb) SetCurrentVideo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var c currentVideo
@@ -490,6 +497,7 @@ func (m *Memdb) SetCurrentVideo() http.HandlerFunc {
 	}
 }
 
+// CompleteVideo handles the HTTP request that marks a video as completed
 func (m *Memdb) CompleteVideo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var c currentVideo
