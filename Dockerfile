@@ -1,7 +1,8 @@
 FROM node as jsbuilder
 WORKDIR /workspace
-COPY app /workspace
+COPY app/package.json /workspace
 RUN yarn install
+COPY app /workspace
 RUN yarn build
 
 
@@ -11,8 +12,8 @@ ENV GO111MODULE=on
 WORKDIR /go/src/github.com/gnur/quice/
 COPY go.mod go.mod
 COPY go.sum go.sum
-COPY --from=jsbuilder /workspace/dist app/dist
 RUN go get -u github.com/UnnoTed/fileb0x
+COPY --from=jsbuilder /workspace/dist app/dist
 
 COPY fileb0x.toml fileb0x.toml
 COPY config config
