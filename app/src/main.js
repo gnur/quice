@@ -3,17 +3,21 @@
 import './../node_modules/bulma/css/bulma.css';
 import Vue from 'vue'
 import PlaylistSelect from './components/PlaylistSelect'
+import PlaylistEditor from './components/PlaylistEditor'
 import UserSelect from './components/UserSelect'
 import VideoPlayer from './components/VideoPlayer'
 import App from './App'
+import Buefy from 'buefy'
 import VueRouter from 'vue-router'
 
+Vue.use(Buefy)
 
 Vue.use(VueRouter)
 const routes = [
   { path: '/', name: "UserSelect", component: UserSelect },
   { path: '/user/:user', name: "PlaylistSelect", component: PlaylistSelect, props: true },
-  { path: '/user/:user/:playlist', name: "VideoPlayer", component: VideoPlayer, props: true }
+  { path: '/user/:user/:playlist', name: "VideoPlayer", component: VideoPlayer, props: true },
+  { path: '/edit/:user/:playlist', name: "PlaylistEditor", component: PlaylistEditor, props: true }
 ]
 
 // Create the router instance and pass the `routes` option

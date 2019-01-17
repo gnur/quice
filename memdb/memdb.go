@@ -52,11 +52,11 @@ type Playlist struct {
 
 // Video refers to a video
 type Video struct {
-	Position  int64
-	Filename  string
-	Key       string
-	Completed bool
-	Changed   time.Time
+	Position  int64     `json:"position"`
+	Filename  string    `json:"filename"`
+	Key       string    `json:"key"`
+	Completed bool      `json:"completed"`
+	Changed   time.Time `json:"changed"`
 }
 
 // Init loads the data from S3 and syncs everything periodically
@@ -484,10 +484,11 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 }
 
 type currentResp struct {
-	URL       string   `json:"url"`
-	Key       string   `json:"key"`
-	Pos       int64    `json:"pos"`
-	AllVideos []string `json:"all"`
+	URL       string            `json:"url"`
+	Key       string            `json:"key"`
+	Pos       int64             `json:"pos"`
+	AllVideos []string          `json:"all"`
+	Videos    map[string]*Video `json:"videos"`
 }
 
 // GetCurrentVideo returns the first unwatched video from a playlist
@@ -502,6 +503,7 @@ func (m *Memdb) GetCurrentVideo() http.HandlerFunc {
 		u.URL = url
 		u.Key = key
 		u.Pos = pos
+		u.Videos = m.Users[vars["user"]].Playlists[vars["playlist"]].Videos
 		json.NewEncoder(w).Encode(u)
 	}
 }
@@ -535,4 +537,45 @@ func (m *Memdb) CompleteVideo() http.HandlerFunc {
 		fmt.Fprintf(w, "%q", "ok")
 		return
 	}
+}
+
+// ToggleVideo handles the HTTP request that toggles a videos completed status
+func (m *Memdb) ToggleVideo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var c currentVideo
+		b, _ := ioutil.ReadAll(r.Body)
+		json.Unmarshal(b, &c)
+		m.ToggleCompleted(c.User, c.Playlist, c.Key)
+		fmt.Fprintf(w, "%q", "ok")
+		return
+	}
+}
+
+// ToggleCompleted toggles a videos completed status
+func (m *Memdb) ToggleCompleted(u, p, key string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	l := log.WithFields(log.Fields{
+		"user":     u,
+		"playlist": p,
+		"key":      key,
+	})
+	user, ok := m.Users[u]
+	if !ok {
+		l.Warning("user not present")
+		return
+	}
+	playlist, ok := user.Playlists[p]
+	if !ok {
+		l.Warning("playlist not present")
+		return
+	}
+	video, ok := playlist.Videos[key]
+	if !ok {
+		l.Warning("video not not found")
+		return
+	}
+	video.Completed = !video.Completed
+	m.changes = true
+	return
 }

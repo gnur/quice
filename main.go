@@ -58,6 +58,7 @@ func main() {
 	r.HandleFunc("/api/current/{user}/{playlist}/", db.GetCurrentVideo()).Methods("GET")
 	r.HandleFunc("/api/updatecurrent/", db.SetCurrentVideo()).Methods("POST")
 	r.HandleFunc("/api/setcompleted/", db.CompleteVideo()).Methods("POST")
+	r.HandleFunc("/api/togglecompleted/", db.ToggleVideo()).Methods("POST")
 	//r.HandleFunc("/api/refresh/", db.Refresh()).Methods("POST")
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(indexBytes)
