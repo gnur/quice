@@ -4,3 +4,4 @@ quice
 app/dist/
 .env
 static
+app-before-new-vue

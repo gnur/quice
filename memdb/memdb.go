@@ -47,6 +47,7 @@ type Playlist struct {
 	Prefixes   []string
 	Sorttype   string
 	sortedKeys []string
+	MaxAge     time.Duration
 }
 
 // Video refers to a video
@@ -161,6 +162,11 @@ func (m *Memdb) Load() error {
 					"playlist": playlistName,
 				}).Debug("playlist with this name already present for user")
 				p.Prefixes = play.Prefixes
+				if play.MaxAge.Duration > time.Hour {
+					p.MaxAge = play.MaxAge.Duration
+				} else {
+					p.MaxAge = time.Hour * 24 * 365 * 50 // 50 years ought to be enough for everybody
+				}
 				continue
 			}
 
@@ -168,9 +174,15 @@ func (m *Memdb) Load() error {
 			p.Prefixes = play.Prefixes
 			p.Sorttype = play.Sorttype
 			p.Videos = make(map[string]*Video)
+			if play.MaxAge.Duration > time.Hour {
+				p.MaxAge = play.MaxAge.Duration
+			} else {
+				p.MaxAge = time.Hour * 24 * 365 * 50 // 50 years ought to be enough for everybody
+			}
 			m.Users[username].Playlists[playlistName] = &p
 			log.WithFields(log.Fields{
 				"username": username,
+				"maxage":   p.MaxAge.String(),
 				"playlist": playlistName,
 			}).Debug("added playlist for user")
 		}
@@ -336,8 +348,24 @@ func (m *Memdb) refresh() {
 				}
 			}
 			play.sortedKeys = []string{}
-			for videoID := range play.Videos {
+			for videoID, vid := range play.Videos {
 				play.sortedKeys = append(play.sortedKeys, videoID)
+				cutOffPoint := time.Now().Add(-play.MaxAge)
+				if vid.Changed.Before(cutOffPoint) && !vid.Completed {
+					vid.Completed = true
+					m.changes = true
+					log.WithFields(log.Fields{
+						"cutoff":  cutOffPoint,
+						"video":   vid.Filename,
+						"changed": vid.Changed,
+					}).Info("Marking videos as watched because it's old")
+				} else {
+					log.WithFields(log.Fields{
+						"cutoff":  cutOffPoint,
+						"video":   vid.Filename,
+						"changed": vid.Changed,
+					}).Debug("Video can stay, is not too old")
+				}
 			}
 			sort.Sort(sort.StringSlice(play.sortedKeys))
 		}

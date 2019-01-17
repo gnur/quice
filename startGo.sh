@@ -9,5 +9,6 @@ export S3_SECRET_ACCESS_KEY
 export BIND_ADDR=localhost:8624
 export LOGLEVEL=DEBUG
 
+go generate
 go build
 ./quice

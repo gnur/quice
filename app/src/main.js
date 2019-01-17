@@ -23,8 +23,6 @@ const router = new VueRouter({
   routes, // short for routes: routes
 })
 new Vue({
-  el: '#app',
-  template: '<App/>',
-  components: { App },
-  router
-})
+  router,
+  render: h => h(App)
+}).$mount('#app')

@@ -48,11 +48,20 @@ func main() {
 
 	r := mux.NewRouter()
 
+	indexBytes, err := static.ReadFile("index.html")
+	if err != nil {
+		log.WithField("err", err).Fatal("could not read index.html")
+	}
+
 	r.HandleFunc("/api/users", db.GetUsers())
 	r.HandleFunc("/api/playlists/{user}/", db.GetPlaylists())
 	r.HandleFunc("/api/current/{user}/{playlist}/", db.GetCurrentVideo()).Methods("GET")
 	r.HandleFunc("/api/updatecurrent/", db.SetCurrentVideo()).Methods("POST")
 	r.HandleFunc("/api/setcompleted/", db.CompleteVideo()).Methods("POST")
+	//r.HandleFunc("/api/refresh/", db.Refresh()).Methods("POST")
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(indexBytes)
+	}).Methods("GET")
 
 	r.PathPrefix("/").Handler(static.Handler)
 

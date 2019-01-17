@@ -1,8 +1,8 @@
 FROM node as jsbuilder
 WORKDIR /workspace
 COPY app /workspace
-RUN npm install
-RUN npm run build
+RUN yarn install
+RUN yarn build
 
 
 FROM golang:1.11-alpine as builder
