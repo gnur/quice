@@ -484,11 +484,12 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 }
 
 type currentResp struct {
-	URL       string            `json:"url"`
-	Key       string            `json:"key"`
-	Pos       int64             `json:"pos"`
-	AllVideos []string          `json:"all"`
-	Videos    map[string]*Video `json:"videos"`
+	URL        string            `json:"url"`
+	Key        string            `json:"key"`
+	Pos        int64             `json:"pos"`
+	SortedKeys []string          `json:"sortedKeys"`
+	Videos     map[string]*Video `json:"videos"`
+	Completed  bool              `json:"completed"`
 }
 
 // GetCurrentVideo returns the first unwatched video from a playlist
@@ -497,9 +498,10 @@ func (m *Memdb) GetCurrentVideo() http.HandlerFunc {
 		var u currentResp
 		vars := mux.Vars(r)
 		url, key, pos := m.GetPlaylistPosition(vars["user"], vars["playlist"])
-		if url != "" {
-			u.AllVideos = m.Users[vars["user"]].Playlists[vars["playlist"]].sortedKeys
+		if url == "" {
+			u.Completed = true
 		}
+		u.SortedKeys = m.Users[vars["user"]].Playlists[vars["playlist"]].sortedKeys
 		u.URL = url
 		u.Key = key
 		u.Pos = pos

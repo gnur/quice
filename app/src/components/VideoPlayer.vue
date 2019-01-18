@@ -1,46 +1,54 @@
 <template>
-<section>
-<nav class="level">
-  <p class="level-item has-text-centered">
-      <router-link :to="{ name: 'UserSelect' }" class="link is-info">
-          <p class="title">users</p>
-        </router-link>
-  </p>
-  <p class="level-item has-text-centered">
-      <router-link :to="{ name: 'PlaylistSelect', params: { user: user }}" class="link is-info">
-          <p class="title">playlists</p>
-        </router-link>
-  </p>
-</nav>
-<div class="tile is-ancestor">
-  <div class="tile is-parent is-4">
-    <div class="tile is-child box has-background-grey-lighter has-text-grey-dark" v-if="loaded">
-      <progress class="progress" :value="currentVideo" :max="totalVideos">{{ currentVideo }}/{{ totalVideos }}</progress><br>
-      <p class="title">{{ currentVideo+1 }}/{{ totalVideos }}</p>
-      <p>
-        <p class="title is-5">Now playing:</p>
-        <p class="subtitle is-6">{{ video.key | keyToNice }}</p>
-      <p><h6 class="title is-5">Next up:</h6>
-        <a v-on:click="gotoNextVideo">{{ all[currentVideo + 1] | keyToNice }}</a>
-    </div>
-    <div class="tile is-child box has-background-grey-lighter has-text-grey-dark" v-else>
-      <p class="title is-2">Loading...</p>
-    </div>
-  </div>
+  <section>
+    <nav class="navbar is-transparant" role="navigation">
+      <div class="navbar-menu is-active">
+        <div class="navbar-start">
+          <router-link :to="{ name: 'UserSelect' }" class="navbar-item">users</router-link>
+          <router-link :to="{ name: 'PlaylistSelect' }" class="navbar-item">playlists</router-link>
+        </div>
+      </div>
+    </nav>
 
-  <div class="tile is-parent">
-    <div class="tile is-child box has-background-grey-lighter has-text-grey-dark">
-        <video id="videoplayer"
+    <div class="tile is-ancestor">
+      <div class="tile is-parent is-4">
+        <div class="tile is-child box has-background-grey-lighter has-text-grey-dark" v-if="loaded">
+          <progress
+            class="progress"
+            :value="currentVideo"
+            :max="totalVideos"
+          >{{ currentVideo }}/{{ totalVideos }}</progress>
+          <router-link :to="{ name: 'PlaylistEditor' }">
+            <p class="title">{{ currentVideo+1 }}/{{ totalVideos }}</p>
+          </router-link>
+          <br>
+          <p></p>
+          <p class="title is-5">Now playing:</p>
+          <p class="subtitle is-6" :title="video.key">{{ video.filename | keyToNice }}</p>
+          <p></p>
+          <h6 class="title is-5">Next up:</h6>
+          <a
+            v-on:click="gotoNextVideo"
+          >{{ allVideos[sortedKeys[currentVideo + 1]].filename | keyToNice }}</a>
+        </div>
+        <div class="tile is-child box has-background-grey-lighter has-text-grey-dark" v-else>
+          <p class="title is-2">Loading...</p>
+        </div>
+      </div>
+
+      <div class="tile is-parent">
+        <div class="tile is-child box has-background-grey-lighter has-text-grey-dark">
+          <video
+            id="videoplayer"
             controls="true"
             type="video/mp4"
             v-on:ended="gotoNextVideo"
             v-on:play="startRecord"
             v-on:pause="stopRecord"
-            class="is-7">
-        </video>
+            class="is-7"
+          ></video>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
   </section>
 </template>
 
@@ -56,13 +64,17 @@ export default {
       loaded: false,
       currentVideo: 2,
       totalVideos: 4,
-      all: [],
+      completed: false,
+      sortedKeys: [],
+      allVideos: {}
     };
   },
   filters: {
     keyToNice(value) {
-      if (!value) return '';
-      return value.replace(/(_|\/)/g, " ");
+      if (!value) return "";
+      console.log(value);
+      value = value.replace("^[^/]+", "");
+      return value.replace(/(_|\/|\.)/g, " ");
     }
   },
   methods: {
@@ -116,11 +128,18 @@ export default {
       axios.get("/api/current/" + this.user + "/" + this.playlist + "/").then(
         response => {
           var resp = response.data;
-          this.video = resp;
-          this.currentVideo = resp.all.indexOf(resp.key);
-          this.totalVideos = resp.all.length;
-          this.all = resp.all;
           var vm = this;
+          this.totalVideos = resp.sortedKeys.length;
+          this.sortedKeys = resp.sortedKeys;
+          this.allVideos = resp.videos;
+          if (resp.completed) {
+            this.currentVideo = this.totalVideos - 1;
+            vm.loaded = true;
+            return;
+          }
+          this.video = this.allVideos[resp.key];
+
+          this.currentVideo = resp.sortedKeys.indexOf(resp.key);
           var player = document.getElementById("videoplayer");
           var source = document.getElementById("videosource");
 
