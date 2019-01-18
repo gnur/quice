@@ -31,7 +31,4 @@ export default {
 
 // Import icons
 @import "~@mdi/font/css/materialdesignicons.min.css";
-html {
-  background-color: #222222;
-}
 </style>
