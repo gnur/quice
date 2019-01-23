@@ -62,6 +62,7 @@ export default {
     return {
       video: {},
       loaded: false,
+      key: "",
       currentVideo: 2,
       totalVideos: 4,
       completed: false,
@@ -95,7 +96,7 @@ export default {
       axios
         .post("/api/updatecurrent/", {
           user: vm.user,
-          key: vm.video.key,
+          key: vm.key,
           playlist: vm.playlist,
           position: pos
         })
@@ -112,7 +113,7 @@ export default {
       axios
         .post("/api/setcompleted/", {
           user: vm.user,
-          key: vm.video.key,
+          key: vm.key,
           playlist: vm.playlist
         })
         .then(
@@ -132,6 +133,7 @@ export default {
           this.totalVideos = resp.sortedKeys.length;
           this.sortedKeys = resp.sortedKeys;
           this.allVideos = resp.videos;
+          vm.key = resp.key;
           if (resp.completed) {
             this.currentVideo = this.totalVideos - 1;
             vm.loaded = true;
@@ -148,7 +150,7 @@ export default {
           var handler = function() {
             vm.loaded = true;
             player.currentTime = resp.pos;
-            document.title = vm.video.key;
+            document.title = keyToNice(vm.video.key);
             if (autostart) {
               player.play();
             }
