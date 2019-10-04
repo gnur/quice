@@ -17,7 +17,7 @@ import (
 
 	"github.com/gnur/quice/config"
 	"github.com/gorilla/mux"
-	"github.com/minio/minio-go"
+	minio "github.com/minio/minio-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -47,14 +47,16 @@ type Playlist struct {
 	Prefixes   []string
 	Sorttype   string
 	sortedKeys []string
+	MaxAge     time.Duration
 }
 
 // Video refers to a video
 type Video struct {
-	Position  int64
-	Filename  string
-	Key       string
-	Completed bool
+	Position  int64     `json:"position"`
+	Filename  string    `json:"filename"`
+	Key       string    `json:"key"`
+	Completed bool      `json:"completed"`
+	Changed   time.Time `json:"changed"`
 }
 
 // Init loads the data from S3 and syncs everything periodically
@@ -160,6 +162,11 @@ func (m *Memdb) Load() error {
 					"playlist": playlistName,
 				}).Debug("playlist with this name already present for user")
 				p.Prefixes = play.Prefixes
+				if play.MaxAge.Duration > time.Hour {
+					p.MaxAge = play.MaxAge.Duration
+				} else {
+					p.MaxAge = time.Hour * 24 * 365 * 50 // 50 years ought to be enough for everybody
+				}
 				continue
 			}
 
@@ -167,9 +174,15 @@ func (m *Memdb) Load() error {
 			p.Prefixes = play.Prefixes
 			p.Sorttype = play.Sorttype
 			p.Videos = make(map[string]*Video)
+			if play.MaxAge.Duration > time.Hour {
+				p.MaxAge = play.MaxAge.Duration
+			} else {
+				p.MaxAge = time.Hour * 24 * 365 * 50 // 50 years ought to be enough for everybody
+			}
 			m.Users[username].Playlists[playlistName] = &p
 			log.WithFields(log.Fields{
 				"username": username,
+				"maxage":   p.MaxAge.String(),
 				"playlist": playlistName,
 			}).Debug("added playlist for user")
 		}
@@ -272,6 +285,7 @@ func (m *Memdb) SetCompleted(u, p, key string) {
 	return
 }
 
+// KeyExists returns true or false depending on the existence of an object in an S3 bucket
 func (m *Memdb) KeyExists(k string) bool {
 	_, err := m.store.StatObject(m.bucket, k, minio.StatObjectOptions{})
 	if err != nil {
@@ -312,6 +326,7 @@ func (m *Memdb) refresh() {
 					v.Completed = false
 					v.Position = 0
 					v.Filename = keyParts[len(keyParts)-1]
+					v.Changed = o.LastModified
 					v.Key = o.Key
 					if play.Sorttype == "date" {
 						videoID = o.LastModified.UTC().Format(time.RFC3339) + "_" + o.Key
@@ -333,8 +348,24 @@ func (m *Memdb) refresh() {
 				}
 			}
 			play.sortedKeys = []string{}
-			for videoID := range play.Videos {
+			for videoID, vid := range play.Videos {
 				play.sortedKeys = append(play.sortedKeys, videoID)
+				cutOffPoint := time.Now().Add(-play.MaxAge)
+				if vid.Changed.Before(cutOffPoint) && !vid.Completed {
+					vid.Completed = true
+					m.changes = true
+					log.WithFields(log.Fields{
+						"cutoff":  cutOffPoint,
+						"video":   vid.Filename,
+						"changed": vid.Changed,
+					}).Info("Marking videos as watched because it's old")
+				} else {
+					log.WithFields(log.Fields{
+						"cutoff":  cutOffPoint,
+						"video":   vid.Filename,
+						"changed": vid.Changed,
+					}).Debug("Video can stay, is not too old")
+				}
 			}
 			sort.Sort(sort.StringSlice(play.sortedKeys))
 		}
@@ -396,6 +427,7 @@ type userResp struct {
 	Users []string `json:"users"`
 }
 
+// GetUsers returns all users as JSON
 func (m *Memdb) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m.lock.Lock()
@@ -420,6 +452,7 @@ type playResp struct {
 	New   int64  `json:"new"`
 }
 
+// GetPlaylists returns all playlists for an user as JSON
 func (m *Memdb) GetPlaylists() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m.lock.Lock()
@@ -437,7 +470,7 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 			p.New = 0
 			for _, v := range list.Videos {
 				if !v.Completed {
-					p.New += 1
+					p.New++
 				}
 			}
 			u.Playlists = append(u.Playlists, p)
@@ -451,23 +484,28 @@ func (m *Memdb) GetPlaylists() http.HandlerFunc {
 }
 
 type currentResp struct {
-	Url       string   `json:"url"`
-	Key       string   `json:"key"`
-	Pos       int64    `json:"pos"`
-	AllVideos []string `json:"all"`
+	URL        string            `json:"url"`
+	Key        string            `json:"key"`
+	Pos        int64             `json:"pos"`
+	SortedKeys []string          `json:"sortedKeys"`
+	Videos     map[string]*Video `json:"videos"`
+	Completed  bool              `json:"completed"`
 }
 
+// GetCurrentVideo returns the first unwatched video from a playlist
 func (m *Memdb) GetCurrentVideo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u currentResp
 		vars := mux.Vars(r)
 		url, key, pos := m.GetPlaylistPosition(vars["user"], vars["playlist"])
-		if url != "" {
-			u.AllVideos = m.Users[vars["user"]].Playlists[vars["playlist"]].sortedKeys
+		if url == "" {
+			u.Completed = true
 		}
-		u.Url = url
+		u.SortedKeys = m.Users[vars["user"]].Playlists[vars["playlist"]].sortedKeys
+		u.URL = url
 		u.Key = key
 		u.Pos = pos
+		u.Videos = m.Users[vars["user"]].Playlists[vars["playlist"]].Videos
 		json.NewEncoder(w).Encode(u)
 	}
 }
@@ -479,6 +517,7 @@ type currentVideo struct {
 	Position int64  `json:"position"`
 }
 
+// SetCurrentVideo handles the HTTP request to update the memDB with current position of a video
 func (m *Memdb) SetCurrentVideo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var c currentVideo
@@ -490,6 +529,7 @@ func (m *Memdb) SetCurrentVideo() http.HandlerFunc {
 	}
 }
 
+// CompleteVideo handles the HTTP request that marks a video as completed
 func (m *Memdb) CompleteVideo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var c currentVideo
@@ -499,4 +539,45 @@ func (m *Memdb) CompleteVideo() http.HandlerFunc {
 		fmt.Fprintf(w, "%q", "ok")
 		return
 	}
+}
+
+// ToggleVideo handles the HTTP request that toggles a videos completed status
+func (m *Memdb) ToggleVideo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var c currentVideo
+		b, _ := ioutil.ReadAll(r.Body)
+		json.Unmarshal(b, &c)
+		m.ToggleCompleted(c.User, c.Playlist, c.Key)
+		fmt.Fprintf(w, "%q", "ok")
+		return
+	}
+}
+
+// ToggleCompleted toggles a videos completed status
+func (m *Memdb) ToggleCompleted(u, p, key string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	l := log.WithFields(log.Fields{
+		"user":     u,
+		"playlist": p,
+		"key":      key,
+	})
+	user, ok := m.Users[u]
+	if !ok {
+		l.Warning("user not present")
+		return
+	}
+	playlist, ok := user.Playlists[p]
+	if !ok {
+		l.Warning("playlist not present")
+		return
+	}
+	video, ok := playlist.Videos[key]
+	if !ok {
+		l.Warning("video not not found")
+		return
+	}
+	video.Completed = !video.Completed
+	m.changes = true
+	return
 }

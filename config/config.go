@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"time"
 
 	"github.com/burntsushi/toml"
 	"github.com/minio/minio-go"
@@ -22,8 +23,20 @@ type User struct {
 type Playlist struct {
 	Prefixes []string
 	Sorttype string
+	MaxAge   duration
 }
 
+type duration struct {
+	time.Duration
+}
+
+func (d *duration) UnmarshalText(text []byte) error {
+	var err error
+	d.Duration, err = time.ParseDuration(string(text))
+	return err
+}
+
+// Load loads the config from an S3 bucket and returns a pointer to the configuration
 func Load(mc *minio.Client, bucket string) (*Cfg, error) {
 	object, err := mc.GetObject(bucket, "quice.toml", minio.GetObjectOptions{})
 	if err != nil {

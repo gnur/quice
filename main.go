@@ -7,10 +7,26 @@ import (
 
 	"github.com/gnur/quice/config"
 	"github.com/gnur/quice/memdb"
+	"github.com/gnur/quice/static"
 	"github.com/gorilla/mux"
-	"github.com/minio/minio-go"
+	minio "github.com/minio/minio-go"
 	log "github.com/sirupsen/logrus"
 )
+
+//go:generate fileb0x fileb0x.toml
+
+type configuration struct {
+	S3Host          string `required:"true"`
+	S3Bucket        string `required:"true"`
+	LogLevel        string `default:"info"`
+	AccessKeyID     string `required:"true"`
+	SecretAccessKey string `required:"true"`
+}
+
+type app struct {
+	s3     *minio.Client
+	logger *log.Logger
+}
 
 func init() {
 	log.SetOutput(os.Stdout)
@@ -45,13 +61,23 @@ func main() {
 
 	r := mux.NewRouter()
 
+	indexBytes, err := static.ReadFile("index.html")
+	if err != nil {
+		log.WithField("err", err).Fatal("could not read index.html")
+	}
+
 	r.HandleFunc("/api/users", db.GetUsers())
 	r.HandleFunc("/api/playlists/{user}/", db.GetPlaylists())
 	r.HandleFunc("/api/current/{user}/{playlist}/", db.GetCurrentVideo()).Methods("GET")
 	r.HandleFunc("/api/updatecurrent/", db.SetCurrentVideo()).Methods("POST")
 	r.HandleFunc("/api/setcompleted/", db.CompleteVideo()).Methods("POST")
+	r.HandleFunc("/api/togglecompleted/", db.ToggleVideo()).Methods("POST")
+	//r.HandleFunc("/api/refresh/", db.Refresh()).Methods("POST")
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(indexBytes)
+	}).Methods("GET")
 
-	r.PathPrefix("/").Handler(http.FileServer(assetFS()))
+	r.PathPrefix("/").Handler(static.Handler)
 
 	http.Handle("/", r)
 
