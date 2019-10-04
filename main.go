@@ -15,6 +15,19 @@ import (
 
 //go:generate fileb0x fileb0x.toml
 
+type configuration struct {
+	S3Host          string `required:"true"`
+	S3Bucket        string `required:"true"`
+	LogLevel        string `default:"info"`
+	AccessKeyID     string `required:"true"`
+	SecretAccessKey string `required:"true"`
+}
+
+type app struct {
+	s3     *minio.Client
+	logger *log.Logger
+}
+
 func init() {
 	log.SetOutput(os.Stdout)
 	if os.Getenv("LOGLEVEL") == "DEBUG" {
